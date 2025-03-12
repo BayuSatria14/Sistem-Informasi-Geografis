@@ -1,0 +1,111 @@
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #CAD4CC;
+}
+
+.auth {
+  background-color: #495C39;
+}
+
+.auth-box {
+  display: flex;
+  width: 800px;
+  height: 500px;
+  box-shadow: 0 20px 12px rgba(0, 0, 0, 0.15);
+}
+
+.form-section,
+.logo-section {
+  flex: 1;
+  padding: 40px;
+}
+
+.form-section {
+  background-color: #5e7c69;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.form-section h2 {
+  margin-bottom: 20px;
+  color: #fff;
+  text-align: center;
+}
+
+.form-section input {
+  width: 83.8%;
+  padding: 12px;
+  padding-right: 40px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 4px;
+}
+
+.password-input {
+  position: relative;
+}
+
+.password-input span {
+  position: absolute;
+  top: 40%;
+  right: 10px;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.form-section button {
+  width: 100%;
+  padding: 12px;
+  background-color: #325b44;
+  color: #CAD4CC;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.form-section button:hover {
+  background-color: #2a4b38;
+}
+
+.form-section p {
+  margin-top: 15px;
+  color: #fff;
+  text-align: center;
+}
+
+.form-section span {
+  color: #a1d6a3;
+  cursor: pointer;
+}
+
+.error-message {
+  background-color: #eda3a9;
+  color: #990e1c;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.logo-section {
+  background-color: #8fbf92;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-section img {
+  width: 200px;
+  height: 200px;
+}
+
+.logo-section h1 {
+  margin-top: 15px;
+  color: #fff;
+  font-size: 1.5rem;
+}
