@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Auth from './Auth.js';
-import Home from './Home.js';
+import Auth from './Auth';
+import Home from './Home';
 
 function App() {
   return (
@@ -16,7 +16,5 @@ function App() {
     </div>
   );
 }
-
-
 
 export default App;

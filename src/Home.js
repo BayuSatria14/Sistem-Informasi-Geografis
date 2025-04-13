@@ -1,68 +1,160 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, LayerGroup, Circle } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import './Home.css';
-import { Map, Layers, BarChart2, Settings, LogOut, Search, Info, Navigation } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+    MapContainer,
+    TileLayer,
+    Marker,
+    Popup,
+    useMapEvents,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import "./Home.css";
+import { Map, Layers, BarChart2, Settings, LogOut, Search, Plus } from "lucide-react";
 
-// Fix icon issues in leaflet
+// Fix leaflet icon
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png'
+    iconRetinaUrl:
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+    iconUrl:
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+    shadowUrl:
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
 const Home = () => {
-    const [user, setUser] = useState({ name: 'Admin', email: 'admin@gis.com' });
+    const [user, setUser] = useState({ name: "User", email: "" });
+    const [locations, setLocations] = useState([]);
+    const [newLocation, setNewLocation] = useState(null);
+    const [locationForm, setLocationForm] = useState({ name: "", desc: "" });
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [selectedLocation, setSelectedLocation] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [mapView, setMapView] = useState('standard');
-    const [locations, setLocations] = useState([
-        { id: 1, name: 'Gunung Merapi', desc: 'Gunung berapi aktif di Jawa Tengah', category: 'landmark', position: [-7.5407, 110.4457] },
-        { id: 2, name: 'Danau Toba', desc: 'Danau vulkanik terbesar di Indonesia', category: 'tourism', position: [2.6158, 98.8350] },
-        { id: 3, name: 'Taman Nasional Komodo', desc: 'Habitat komodo di Nusa Tenggara Timur', category: 'park', position: [-8.5519, 119.4891] },
-        { id: 4, name: 'Kota Tua Jakarta', desc: 'Kawasan bersejarah di Jakarta', category: 'history', position: [-6.1351, 106.8133] },
-        { id: 5, name: 'Raja Ampat', desc: 'Kepulauan dengan keindahan bawah laut', category: 'tourism', position: [-1.0741, 130.8779] }
-    ]);
     const navigate = useNavigate();
 
+    // Autentikasi dan ambil user
     useEffect(() => {
-        // Check authentication
-        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
         if (!isAuthenticated) {
-            navigate('/login');
+            navigate("/");
             return;
         }
 
-        // Get user data
-        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        const userData = JSON.parse(localStorage.getItem("user") || "{}");
         if (userData.name) {
             setUser(userData);
         }
     }, [navigate]);
 
+    // Fetch locations
+    useEffect(() => {
+        const fetchLocations = async () => {
+            try {
+                const response = await fetch("http://localhost:2253/api/locations");
+                const result = await response.json();
+
+                const formattedLocations = result.locations
+                    .filter(
+                        (loc) =>
+                            Math.abs(loc.latitude) <= 90 && Math.abs(loc.longitude) <= 180
+                    )
+                    .map((loc) => ({
+                        id: loc.id,
+                        name: loc.location_name,
+                        desc: loc.description,
+                        position: [loc.latitude, loc.longitude],
+                    }));
+
+                setLocations(formattedLocations);
+            } catch (error) {
+                console.error("Gagal mengambil data lokasi:", error);
+            }
+        };
+
+        fetchLocations();
+    }, []);
+
+    // Logout
     const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('user');
-        navigate('/login');
+        localStorage.removeItem("isAuthenticated");
+        localStorage.removeItem("user");
+        navigate("/");
     };
 
+    // Toggle mobile menu
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
 
-    const handleLocationSelect = (location) => {
-        setSelectedLocation(location);
-        setIsMenuOpen(false);
+    // Map click handler
+    const MapClickHandler = () => {
+        useMapEvents({
+            click(e) {
+                const { lat, lng } = e.latlng;
+                setNewLocation({ lat, lng });
+                setLocationForm({ name: "", desc: "" });
+            },
+        });
+        return null;
     };
 
+    // Submit form to add location
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        if (locationForm.name && locationForm.desc && newLocation) {
+            const newLoc = {
+                location_name: locationForm.name,
+                description: locationForm.desc,
+                latitude: parseFloat(newLocation.lat),
+                longitude: parseFloat(newLocation.lng),
+            };
+
+            try {
+                const response = await fetch("http://localhost:2253/api/locations", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(newLoc),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Gagal menambahkan lokasi ke server");
+                }
+
+                // Ambil ulang data dari API setelah menambahkan lokasi
+                const updatedResponse = await fetch(
+                    "http://localhost:2253/api/locations"
+                );
+                const updatedResult = await updatedResponse.json();
+
+                const formattedLocations = updatedResult.locations
+                    .filter(
+                        (loc) =>
+                            Math.abs(loc.latitude) <= 90 && Math.abs(loc.longitude) <= 180
+                    )
+                    .map((loc) => ({
+                        id: loc.id,
+                        name: loc.location_name,
+                        desc: loc.description,
+                        position: [loc.latitude, loc.longitude],
+                    }));
+
+                setLocations(formattedLocations); // Update state locations
+                setNewLocation(null); // Reset the new location state
+                setLocationForm({ name: "", desc: "" }); // Reset form
+            } catch (error) {
+                console.error("Gagal mengirim data:", error);
+                alert("Terjadi kesalahan saat mengirim data ke server");
+            }
+        }
+    };
+
+    // Filter locations based on search term
     const filteredLocations = locations.filter(location =>
         location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        location.desc.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        location.category.toLowerCase().includes(searchTerm.toLowerCase())
+        location.desc.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -97,6 +189,11 @@ const Home = () => {
                         <span>Settings</span>
                     </div>
                 </div>
+
+                <div className="logout-button" onClick={handleLogout}>
+                    <i className="icon"><LogOut size={18} /></i>
+                    <span>Logout</span>
+                </div>
             </div>
 
             <div className="main-content">
@@ -121,6 +218,7 @@ const Home = () => {
                         <span>Logout</span>
                     </div>
                 </div>
+
                 <div className="content">
                     <div className="map-controls">
                         <div className="view-buttons">
@@ -146,7 +244,11 @@ const Home = () => {
                     </div>
 
                     <div className="map-container">
-                        <MapContainer center={[-2.5489, 118.0149]} zoom={5} style={{ height: '100%', width: '100%' }}>
+                        <MapContainer
+                            center={[-8.579585, 115.234219]}
+                            zoom={12}
+                            style={{ height: "100%", width: "100%" }}
+                        >
                             {mapView === 'standard' && (
                                 <TileLayer
                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -165,36 +267,68 @@ const Home = () => {
                                     url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
                                 />
                             )}
+                            <MapClickHandler />
 
-                            {filteredLocations.map(location => (
-                                <Marker
-                                    key={location.id}
-                                    position={location.position}
-                                    eventHandlers={{
-                                        click: () => {
-                                            setSelectedLocation(location);
-                                        },
-                                    }}
-                                >
+                            {locations.map((location) => (
+                                <Marker key={location.id} position={location.position}>
                                     <Popup>
                                         <div>
                                             <h3>{location.name}</h3>
                                             <p>{location.desc}</p>
-                                            <p><strong>Category:</strong> {location.category}</p>
+                                            <p>
+                                                <strong>Koordinat:</strong>
+                                            </p>
+                                            <p>Lat: {location.position[0]}</p>
+                                            <p>Lng: {location.position[1]}</p>
                                         </div>
                                     </Popup>
                                 </Marker>
                             ))}
 
-                            {filteredLocations.map(location => (
-                                <LayerGroup key={`layer-${location.id}`}>
-                                    <Circle
-                                        center={location.position}
-                                        radius={20000}
-                                        pathOptions={{ fillColor: 'blue', fillOpacity: 0.1, weight: 1 }}
-                                    />
-                                </LayerGroup>
-                            ))}
+                            {newLocation && (
+                                <Marker position={[newLocation.lat, newLocation.lng]}>
+                                    <Popup>
+                                        <form onSubmit={handleFormSubmit} className="location-form">
+                                            <h4>Add New Location</h4>
+                                            <div className="form-group">
+                                                <label>Location Name:</label>
+                                                <input
+                                                    type="text"
+                                                    value={locationForm.name}
+                                                    onChange={(e) =>
+                                                        setLocationForm({
+                                                            ...locationForm,
+                                                            name: e.target.value,
+                                                        })
+                                                    }
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Description:</label>
+                                                <textarea
+                                                    value={locationForm.desc}
+                                                    onChange={(e) =>
+                                                        setLocationForm({
+                                                            ...locationForm,
+                                                            desc: e.target.value,
+                                                        })
+                                                    }
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="form-group coordinates">
+                                                <p>Lat: {newLocation.lat.toFixed(4)}</p>
+                                                <p>Lng: {newLocation.lng.toFixed(4)}</p>
+                                            </div>
+                                            <button type="submit" className="add-button">
+                                                <Plus size={16} />
+                                                <span>Add Location</span>
+                                            </button>
+                                        </form>
+                                    </Popup>
+                                </Marker>
+                            )}
                         </MapContainer>
                     </div>
 
@@ -216,37 +350,17 @@ const Home = () => {
                             {filteredLocations.map(location => (
                                 <div
                                     key={location.id}
-                                    className={`location-item ${selectedLocation?.id === location.id ? 'active' : ''}`}
-                                    onClick={() => handleLocationSelect(location)}
+                                    className="location-item"
                                 >
                                     <h4>{location.name}</h4>
                                     <p>{location.desc}</p>
-                                    <span className="location-category">{location.category}</span>
+                                    <p className="coordinates">
+                                        Lat: {location.position[0].toFixed(4)}, Lng: {location.position[1].toFixed(4)}
+                                    </p>
                                 </div>
                             ))}
                         </div>
                     </div>
-
-                    {selectedLocation && (
-                        <div className="info-panel">
-                            <h3>{selectedLocation.name}</h3>
-                            <p>{selectedLocation.desc}</p>
-                            <p className="info-category">Category: <span>{selectedLocation.category}</span></p>
-                            <p className="info-coords">
-                                Coordinates: {selectedLocation.position[0].toFixed(4)}, {selectedLocation.position[1].toFixed(4)}
-                            </p>
-                            <div className="info-actions">
-                                <button className="info-button">
-                                    <Info size={16} />
-                                    <span>Details</span>
-                                </button>
-                                <button className="info-button secondary">
-                                    <Navigation size={16} />
-                                    <span>Route</span>
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
