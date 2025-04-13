@@ -12,10 +12,10 @@ const PORT = 2253;
 
 const corsOption = {
   origin: [
-    "https://gis_2205551142.manpits.xyz",
+    "https://gis_2205551153.manpits.xyz",
     "http://192.168.4.4",
     "http://localhost:3000",
-    "http://192.168.4.4:2242",
+    "http://192.168.4.4:2253",
   ],
   credentials: true,
   methods: ["GET", "POST"],
