@@ -190,10 +190,6 @@ const Home = () => {
                     </div>
                 </div>
 
-                <div className="logout-button" onClick={handleLogout}>
-                    <i className="icon"><LogOut size={18} /></i>
-                    <span>Logout</span>
-                </div>
             </div>
 
             <div className="main-content">
@@ -214,7 +210,7 @@ const Home = () => {
                         />
                     </div>
                     <div className="logout-button" onClick={handleLogout}>
-                        <i className="icon"><LogOut size={18} /></i>
+                        <i className="icon"><LogOut size={25} /></i>
                         <span>Logout</span>
                     </div>
                 </div>

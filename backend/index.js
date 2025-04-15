@@ -15,7 +15,7 @@ const corsOption = {
     "https://gis_2205551153.manpits.xyz",
     "http://192.168.4.4",
     "http://localhost:3000",
-    "http://192.168.4.4:2253",
+    "http://192.168.4.4:3306",
   ],
   credentials: true,
   methods: ["GET", "POST"],
